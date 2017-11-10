@@ -17,7 +17,7 @@ io.sockets.on('connection', function(socket) {
         console.log('disconnected: sockets connected: ' + io.engine.clientsCount);
         // disconnect
         if(!socket.username) {
-            return
+            return;
         }
         users.splice(users.indexOf(socket.username), 1);
         updateUserNames();
