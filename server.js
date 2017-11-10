@@ -4,7 +4,6 @@ var server = require('http').createServer(app);
 var io = require('socket.io').listen(server);
 
 users = [];
-connections = [];
 
 server.listen(process.env.PORT || 3000);
 console.log('server running');
@@ -13,11 +12,38 @@ app.get('/',function(req, res) {
 });
 
 io.sockets.on('connection', function(socket) {
-    connections.push(socket);
-    console.log('connected ' + connections.length);
+    console.log('connected: sockets connected ' + io.engine.clientsCount);
+    socket.on('disconnect', function(data) {
+        console.log('disconnected: sockets connected: ' + io.engine.clientsCount);
+        // disconnect
+        if(!socket.username) {
+            return
+        }
+        users.splice(users.indexOf(socket.username), 1);
+        updateUserNames();
+        
+    });
 
+    socket.on('send-message', function(data) {
+        io.sockets.emit('new-message', {
+            msg: data,
+            user: socket.username
+        });
+    });
 
-    // disconnect
-    connections.splice(connections.indexOf(socket), 1);
-    console.log('disconnected ' + connections.length);
+    socket.on('new-user', function(data, callback) {
+        callback(true);
+        socket.username = data;
+        users.push(socket.username);
+        updateUserNames();
+    });
+
+    socket.on('typing', function(data) {
+        socket.broadcast.emit('typing-message', data);
+    });
+
+    function updateUserNames() {
+        io.sockets.emit('get-users', users);
+    }
+
 });
